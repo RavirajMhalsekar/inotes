@@ -1,7 +1,8 @@
 <?php 
 
-// INSERT INTO `notes` (`Sno`, `title`, `description`, `tstamp`) VALUES (NULL, 'buy book', 'go buy books', current_timestamp());
   $insert = false;
+  $update = false;
+  $delete = false;
   //connect to database
   $servername = "localhost";
   $username = "root";
@@ -15,19 +16,48 @@
   if(!$conn){
     die("sorry we failed to connect: ". mysqli_connect_error());
   }
-  if($_SERVER['REQUEST_METHOD'] == 'POST'){
-    $title = $_POST["title"];
-    $description = $_POST["description"];
+  
+  if(isset($_GET['delete'])){
+    $sno = $_GET['delete'];
 
-    $sql = "INSERT INTO `notes` (`title`, `description`) VALUES ('$title', '$description')";
+    $sql = "DELETE FROM `notes` WHERE `notes`.`Sno` = '$sno'";
     $result = mysqli_query($conn,$sql);
     if($result){
-      // echo "The record has been inserted successfully! <br>";
-      $insert = true;
+      // echo "The record has been deleted successfully! <br>";
+      $delete = true;
     }else{
-      echo "The record was not been inserted! " . mysqli_error($conn);
+      echo "The record was not been updated! " . mysqli_error($conn);
     }
   }
+    
+    if($_SERVER['REQUEST_METHOD'] == 'POST'){
+      
+      if(isset($_POST['snoEdit'])){
+        $Sno = $_POST["snoEdit"];
+        $title = $_POST["titleEdit"];
+        $description = $_POST["descriptionEdit"];
+
+        $sql = "UPDATE `notes` SET `title` = '$title' , `description` = '$description' WHERE `notes`.`Sno` = '$Sno'";
+        $result = mysqli_query($conn,$sql);
+        if($result){
+          // echo "The record has been updated successfully! <br>";
+          $update = true;
+        }else{
+          echo "The record was not been updated! " . mysqli_error($conn);
+        }
+      }else{
+        $title = $_POST["title"];
+        $description = $_POST["description"];
+        $sql = "INSERT INTO `notes` (`title`, `description`) VALUES ('$title', '$description')";
+        $result = mysqli_query($conn,$sql);
+        if($result){
+          // echo "The record has been inserted successfully! <br>";
+          $insert = true;
+        }else{
+          echo "The record was not been inserted! " . mysqli_error($conn);
+        }
+      }
+    }
 ?>
 
 <!DOCTYPE html>
@@ -46,6 +76,46 @@
     
   </head>
   <body>
+
+<!-- Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="editModalLabel">Edit this note</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form action="/inotes/index.php" method="post">
+          <input type="hidden" name="snoEdit" id="snoEdit">
+          <div class="mb-3">
+            <label for="title" class="form-label">Note title</label>
+            <input
+              type="text"
+              class="form-control"
+              id="titleEdit"
+              name="titleEdit"
+            />
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Note Description</label>
+            <div class="form-floating">
+              <textarea
+                class="form-control"
+                placeholder="Leave a note here"
+                id="descriptionEdit"
+                style="height: 100px"
+                name="descriptionEdit"
+              ></textarea>
+            </div>
+          </div>
+  
+          <button type="submit" class="btn btn-primary">Update Note</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container-fluid">
         <a class="navbar-brand" href="#">iNotes</a>
@@ -93,9 +163,22 @@
         <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
       </div>";
       }
+      else if($update){
+        echo "<div class='alert alert-warning alert-dismissible fade show' role='alert'>
+        <strong> Success!</strong> Your note has been updated successfully.
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+      </div>";
+      }
+      else if($delete){
+        echo "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+        <strong> Success!</strong> Your note has been deleted successfully.
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+      </div>";
+      }
     ?>
     <div class="container my-4">
       <h2>Add a note</h2>
+      
       <form action="/inotes/index.php" method="post">
         <div class="mb-3">
           <label for="title" class="form-label">Note title</label>
@@ -123,7 +206,7 @@
       </form>
     </div>
 
-    <div class="container">
+    <div class="container my-4">
       <table class="table" id="myTable">
         <thead>
           <tr>
@@ -137,17 +220,17 @@
         <?php 
           $sql = "SELECT * FROM `notes`";
           $result = mysqli_query($conn,$sql);
-
+          $Sno = 0;
           // fetch
           while($row = mysqli_fetch_assoc($result)){
+            $Sno = $Sno + 1;
             echo "<tr>
-            <th scope='row'>". $row['Sno'] . "</th>
+            <th scope='row'>". $Sno . "</th>
             <td>". $row['title'] . "</td>
             <td>". $row['description'] . "</td>
-            <td>@Action</td>
-          </tr>";
-            // echo $row['Sno'] . ". title " . $row['title'] . " desc is ". $row['description'];
-            // echo "<br>";
+            <td> <button class='edit btn btn-sm btn-primary' id=". $row['Sno'] . " >Edit</button> <Delete class='delete btn btn-sm btn-danger' id="."d". $row['Sno'] . " >Delete</button> </td>
+            </tr>";
+            
           } 
         ?>
           
@@ -167,12 +250,32 @@
         $('#myTable').DataTable();
       } );
     </script>
+    <script>
+      edits = document.getElementsByClassName("edit");
+      Array.from(edits).forEach((element)=>{
+        element.addEventListener("click",(e)=>{
+          tr = e.target.parentNode.parentNode;
+          title = tr.getElementsByTagName("td")[0].innerText;
+          description = tr.getElementsByTagName("td")[1].innerText;
+          console.log(title);
+          console.log(description);
+          titleEdit.value = title;
+          descriptionEdit.value = description;
+          snoEdit.value = e.target.id;
+          console.log(e.target.id);
+          $('#editModal').modal('toggle');
+        })
+      })
+      deletes = document.getElementsByClassName("delete");
+      Array.from(deletes).forEach((element)=>{
+        element.addEventListener("click",(e)=>{
+          sno = e.target.id.substr(1);
+          if(confirm('want to delete?')){
+            window.location = `/inotes/index.php?delete=${sno}`;
+          }
+        })
+      })
+    </script>
   </body>
 </html>
 
-<!-- datatable - plugin to make organized tables
-
-https://datatables.net/
-
-
--->
