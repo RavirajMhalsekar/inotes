@@ -25,3 +25,16 @@ To deploy this project run
 ```
 
 
+## create database table
+
+create database "notes" and run the following sql.
+
+```bash
+  CREATE TABLE `notes`.`notesdata` (
+     `Sno` INT NOT NULL AUTO_INCREMENT ,  
+     `title` VARCHAR(50) NOT NULL ,  
+     `description` TEXT NOT NULL ,  
+     `tstamp` DATE NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+     PRIMARY KEY  (`Sno`)
+    );
+```
