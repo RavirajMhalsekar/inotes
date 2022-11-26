@@ -30,7 +30,7 @@ To deploy this project run
 create database "notes" and run the following sql.
 
 ```bash
-  CREATE TABLE `notes`.`notesdata` (
+  CREATE TABLE `notes`.`notes` (
      `Sno` INT NOT NULL AUTO_INCREMENT ,  
      `title` VARCHAR(50) NOT NULL ,  
      `description` TEXT NOT NULL ,  
